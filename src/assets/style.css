@@ -1,0 +1,19 @@
+body { margin:0; padding:0; }
+
+#map { position: absolute; top:40px; bottom:0; right:0; left:0; }
+
+.tile {
+  font: bold 20px serif;
+  border: 1px dashed grey;
+  z-index: -1;
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+#tile_18_65097_108108 {
+  z-index: 1000;
+  border: 2px dashed red;
+}
+.tile:hover {
+  border: 2px dashed blue;
+}

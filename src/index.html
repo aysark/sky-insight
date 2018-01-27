@@ -1,0 +1,95 @@
+<html>
+<head>
+  <meta charset=utf-8 />
+  <title>ArcGIS VSOD </title>
+  <meta name='viewport' content='initial-scale=1,maximum-scale=1,user-scalable=no' />
+
+    <!-- Load Leaflet from CDN -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.2.0/dist/leaflet.css"
+    integrity="sha512-M2wvCLH6DSRazYeZRIm1JnYyh22purTM+FDB5CsyxtQJYeKq83arPe5wgbNmcFXGqiSH2XR8dT/fJISVA1r/zQ=="
+    crossorigin=""/>
+    <script src="https://unpkg.com/leaflet@1.2.0/dist/leaflet.js"
+    integrity="sha512-lInM/apFSqyy1o6s89K4iQUKg6ppXEgsVxT35HbzUupEVRh2Eu9Wdl4tHj7dZO0s1uvplcYGmt3498TtHq+log=="
+    crossorigin=""></script>
+
+    <!-- Load Esri Leaflet from CDN -->
+    <script src="https://unpkg.com/esri-leaflet@2.1.2/dist/esri-leaflet.js"
+    integrity="sha512-ouokQ1RIIoqPTZKwlapdxHO5VWFoAi8wE+SwhSX89Ifac0w3p+H2da4oqHvRsBTIpNLewzAZU7gRVDFXyXcfjA=="
+    crossorigin=""></script>
+    <script src="https://code.jquery.com/jquery-3.1.0.js"></script>
+    <script type="text/javascript" src="https://sdk.clarifai.com/js/clarifai-latest.js"></script>
+    <script src="../env.js"></script>
+    <link rel="stylesheet" href="assets/style.css" />
+</head>
+<body>
+<div id="map"></div>
+<script>
+  // LAX: [33.9416, -118.4085], 18
+  // Pivot Irrigation: [22.6903733, 28.3971836], 16
+  // Garyville storage tank: [30.0546231,-90.6018915], 18
+  var map = L.map('map').setView([30.0546231,-90.6018915], 18);
+  // note make sure to renew app token if map not displaying
+  // https://tiledbasemaps.arcgis.com/arcgis/rest/services/World_Imagery/MapServer/tile/18/108108/65096/current.jpg?token=
+  L.esri.tiledMapLayer({
+    url: "https://tiledbasemaps.arcgis.com/arcgis/rest/services/World_Imagery/MapServer?token="+env.ESRI_APP_TOKEN
+  }).addTo(map);
+  
+  L.GridLayer.GridDebug = L.GridLayer.extend({
+    createTile: function (coords) {
+      const tile = document.createElement('div');
+      tile.classList.add("tile");
+      var coords_id = [coords.z, coords.x, coords.y].join('_');
+      tile.setAttribute("id", "tile_"+coords_id);
+      tile.innerHTML = coords_id
+      //console.log([coords.z, coords.y, coords.x].join('/'));
+      return tile;
+    },
+  });
+
+  L.gridLayer.gridDebug = function (opts) {
+    return new L.GridLayer.GridDebug(opts);
+  };
+  
+  opts = {
+    zIndex: 2
+  }
+  var grid_layer = L.gridLayer.gridDebug(opts);
+  map.addLayer(grid_layer);
+
+  const app = new Clarifai.App({
+   apiKey: env.CLARIFAI_TOKEN
+  });
+  
+  $('#map').on('click', '.tile', function(){
+    tile_coords = ($(this).attr('id')).split('_');
+    getRelatedTiles(tile_coords[1],tile_coords[3],tile_coords[2]);
+  });
+  
+  function getRelatedTiles(z,y,x) {
+    console.log('fetching related tiles for tile z:'+z+' y:'+y+' x:'+x);
+    var image_url = 'https://tiledbasemaps.arcgis.com/arcgis/rest/services/World_Imagery/MapServer/tile/'+z+'/'+y+'/'+x+'/current.jpg?token='+env.ESRI_APP_TOKEN
+    console.log(image_url);
+    app.inputs.search(
+      {
+        input: {
+          url: image_url
+        }
+      }
+    ).then(
+      function(data) {
+        // console.log(JSON.stringify(data));
+
+        data.hits.forEach(function(hit, i) {
+          console.log('---HIT '+i);
+          console.log(hit);
+        });
+      },
+      function(err) {
+        console.error(err);
+      }
+    );
+  }
+</script>
+
+</body>
+</html>

@@ -1,0 +1,110 @@
+<html>
+<head>
+  <meta charset=utf-8 />
+  <title>ArcGIS VSOD - Train</title>
+  <meta name='viewport' content='initial-scale=1,maximum-scale=1,user-scalable=no' />
+
+    <!-- Load Leaflet from CDN -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.2.0/dist/leaflet.css"
+    integrity="sha512-M2wvCLH6DSRazYeZRIm1JnYyh22purTM+FDB5CsyxtQJYeKq83arPe5wgbNmcFXGqiSH2XR8dT/fJISVA1r/zQ=="
+    crossorigin=""/>
+    <script src="https://unpkg.com/leaflet@1.2.0/dist/leaflet.js"
+    integrity="sha512-lInM/apFSqyy1o6s89K4iQUKg6ppXEgsVxT35HbzUupEVRh2Eu9Wdl4tHj7dZO0s1uvplcYGmt3498TtHq+log=="
+    crossorigin=""></script>
+
+    <!-- Load Esri Leaflet from CDN -->
+    <script src="https://unpkg.com/esri-leaflet@2.1.2/dist/esri-leaflet.js"
+    integrity="sha512-ouokQ1RIIoqPTZKwlapdxHO5VWFoAi8wE+SwhSX89Ifac0w3p+H2da4oqHvRsBTIpNLewzAZU7gRVDFXyXcfjA=="
+    crossorigin=""></script>
+    <script src="https://code.jquery.com/jquery-3.1.0.js"></script>
+    <script type="text/javascript" src="https://sdk.clarifai.com/js/clarifai-latest.js"></script>
+    <script src="env.js"></script>
+    <link rel="stylesheet" href="assets/style.css" />
+</head>
+<body>
+<div>
+  <input type="checkbox" id="ml_flag" name="ml_flag">
+  <label for="ml_flag">ML flag</label>
+</div>
+<div>
+  <input type="checkbox" id="is_positive" name="is_positive">
+  <label for="is_positive">Is positive?</label>
+</div>
+<div id="map"></div>
+<script>
+  // LAX: [33.9416, -118.4085], 18
+  // Pivot Irrigation: [22.6903733, 28.3971836], 16
+  // Garyville storage tank: [30.0546231,-90.6018915], 18
+  var map = L.map('map').setView([30.0546231,-90.6018915], 18);
+  // note make sure to renew app token if map not displaying
+  // https://tiledbasemaps.arcgis.com/arcgis/rest/services/World_Imagery/MapServer/tile/18/108108/65096/current.jpg?token=
+  L.esri.tiledMapLayer({
+    url: "https://tiledbasemaps.arcgis.com/arcgis/rest/services/World_Imagery/MapServer?token="+env.ESRI_APP_TOKEN
+  }).addTo(map);
+  
+  L.GridLayer.GridDebug = L.GridLayer.extend({
+    createTile: function (coords) {
+      const tile = document.createElement('div');
+      tile.classList.add("tile");
+      var coords_id = [coords.z, coords.x, coords.y].join('_');
+      tile.setAttribute("id", "tile_"+coords_id);
+      tile.innerHTML = coords_id
+      //console.log([coords.z, coords.y, coords.x].join('/'));
+      return tile;
+    },
+  });
+
+  L.gridLayer.gridDebug = function (opts) {
+    return new L.GridLayer.GridDebug(opts);
+  };
+  
+  opts = {
+    zIndex: 2
+  }
+  var grid_layer = L.gridLayer.gridDebug(opts);
+  map.addLayer(grid_layer);
+
+  const app = new Clarifai.App({
+   apiKey: env.CLARIFAI_TOKEN
+  });
+  
+  $('#map').on('click', '.tile', function(){
+    tile_coords = ($(this).attr('id')).split('_');
+    // TODO: get concept name from user text field
+    // is_positive from a checkbox
+    
+    if ($('#ml_flag').is(":checked")) {
+      var concept_name = "storage_tank";
+      var is_positive = $('#is_positive').is(":checked");
+      addConcept(concept_name,is_positive,tile_coords[1],tile_coords[3],tile_coords[2]);
+    }
+  });
+
+  function addConcept(concept_name,is_positive,z,y,x) {
+    console.log('adding input tile z:'+z+' y:'+y+' x:'+x+' for concept: '+concept_name+' is positive? '+ is_positive);
+    var image_url = 'https://tiledbasemaps.arcgis.com/arcgis/rest/services/World_Imagery/MapServer/tile/'+z+'/'+y+'/'+x+'/current.jpg?token='+env.ESRI_APP_TOKEN
+
+    app.inputs.create({
+      url: image_url,
+      concepts: [
+        {
+          id: concept_name,
+          value: is_positive
+        }
+      ],
+      metadata: {id: 'tile_'+z+'_'+x+'_'+y, type: 'ags', stage: env.STAGE, size: 256, 
+      src:'https://tiledbasemaps.arcgis.com/arcgis/rest/services/World_Imagery/MapServer/tile/'+z+'/'+y+'/'+x+'/current.jpg'}
+    }).then(
+      function(response) {
+        console.log(response);
+        // TODO: update view with success indicator
+      },
+      function(err) {
+        console.error(err);
+      }
+    );
+  }
+</script>
+
+</body>
+</html>

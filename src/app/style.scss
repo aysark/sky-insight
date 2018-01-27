@@ -1,0 +1,80 @@
+@import url("https://js.arcgis.com/4.6/esri/css/main.css");
+@import url("https://s3-us-west-1.amazonaws.com/patterns.esri.com/files/calcite-web/1.0.0-rc.8/css/calcite-web.min.css");
+@import url("https://unpkg.com/leaflet@1.2.0/dist/leaflet.css");
+
+.wrapper {
+  min-height: 100vh;
+  display: flex;
+  flex-flow: row;
+}
+
+.side-bar-container {
+  flex: 1 24%;
+  border-right: 1px solid #a9a9a9;
+  box-sizing: border-box;
+  font-family: inherit;
+  font-size: 0.9375rem;
+  line-height: 1.25rem;
+  color: #4c4c4c;
+  vertical-align: baseline;
+  outline: none;
+  outline-offset: 0;
+  background-color: #ffffff;
+  -webkit-transition: border-color 150ms linear;
+  transition: border-color 150ms linear;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.075);
+  padding:10px;
+}
+
+.map-container {
+  flex: 1 100%;
+}
+
+#mapView {
+  height: 100%;
+  width: 100%;
+}
+
+.header {
+  padding: 10px;
+}
+
+.results-header {
+  flex: 1 50%;
+}
+
+.train-header {
+  flex: 1 50%;
+}
+
+// body { margin:0; padding:0; }
+
+// #map { position: absolute; top:0; bottom:0; right:0; left:0; }
+
+.tile {
+  font: 14px;
+  color: gray;
+  border: 1px dashed grey;
+  border-radius: 25px;
+  z-index: -1;
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+.tile_active {
+  z-index: 2;
+  border: 2px solid red;
+  border-radius: 25px;
+}
+.tile_active_train {
+  z-index: 2;
+  border: 2px solid green;
+  border-radius: 25px;
+}
+.tile:hover {
+  border: 4px dashed white;
+}
+
+.clear {
+  clear:both;
+}
